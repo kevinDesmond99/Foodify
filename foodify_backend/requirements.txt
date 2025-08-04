@@ -1,0 +1,6 @@
+fastapi
+uvicorn
+sqlalchemy
+pydantic-settings      # se hai migrato a Pydantic v2
+PyJWT>=2.0.0
+passlib[bcrypt]
