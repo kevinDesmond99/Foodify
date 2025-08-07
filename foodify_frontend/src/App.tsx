@@ -1,43 +1,39 @@
-import { Routes, Route, Navigate } from "react-router-dom";
-import { useState } from "react";
-import Login from "./components/Login";
-import Dashboard from "./components/Dashboard";
-import { JSX } from "react/jsx-runtime";
+import React from 'react';
+import Login from './components/Login';
+import { isAuthenticated, logout } from './utils/authService';
+import registerPage from './pages/registerPage';
+import { BrowserRouter, Route, Routes } from 'react-router-dom';
+import RegisterPage from './pages/registerPage';
 
-export default function App() {
-  const [isLogged, setIsLogged] = useState(false);
 
-  function PrivateRoute({ children }: { children: JSX.Element }) {
-    return isLogged ? (
-      children
-    ) : (
-      <Navigate to="/login" replace />
-    );
-  }
-
+export function App() {
   return (
-    <Routes>
-      <Route
-        path="/login"
-        element={
-          isLogged ? (
-            <Navigate to="/dashboard" replace />
-          ) : (
-            <Login onLogin={() => setIsLogged(true)} />
-          )
-        }
-      />
-
-      <Route
-        path="/dashboard"
-        element={
-          <PrivateRoute>
-            <Dashboard onLogout={() => setIsLogged(false)} />
-          </PrivateRoute>
-        }
-      />
-
-      <Route path="*" element={<Navigate to="/login" replace />} />
-    </Routes>
+      <div className="min-h-screen bg-gray-100 p-8">
+        <Routes>
+          <Route
+            path="/"
+            element={
+              isAuthenticated() ? (
+                <div className="text-center">
+                  <h1 className="text-2xl font-bold mb-4">Benvenuto!</h1>
+                  <button
+                    onClick={() => {
+                      logout();
+                      window.location.reload();
+                    }}
+                    className="bg-red-500 text-white px-4 py-2 rounded"
+                  >
+                    Logout
+                  </button>
+                </div>
+              ) : (
+                <Login />
+              )
+            }
+          />
+          <Route path="/register" element={<RegisterPage />} />
+        </Routes>
+      </div>
   );
 }
+
