@@ -1,32 +1,25 @@
 # app/db/models.py
 
 import uuid
-from sqlalchemy import Column, String
+from sqlalchemy import Boolean, Column, DateTime, String
 from sqlalchemy.dialects.postgresql import UUID
 from app.db.database import Base
+from datetime import datetime
 
 class User(Base):
-    __tablename__ = "Users"
+    __tablename__ = "users"   # se vuoi allinearti a Supabase, usa proprio "users"
 
-    # tenant_id: UUID primario, univoco e generato automaticamente
-    tenant_id = Column(
-        UUID(as_uuid=True), 
-        primary_key=True, 
-        default=uuid.uuid4, 
-        unique=True, 
-        nullable=False
-    )
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    email = Column(String, unique=True, nullable=False, index=True)
+    encrypted_password = Column(String, nullable=False)
 
-    # username: varchar univoco
-    username = Column(
-        String(150), 
-        unique=True, 
-        index=True, 
-        nullable=False
-    )
+    def __repr__(self):
+        return f"<User id={self.id} email={self.email}>"
 
-    # password: varchar (in produzione memorizza sempre hash, non plaintext)
-    password = Column(
-        String(256), 
-        nullable=False
-    )
+class Invite(Base):
+    __tablename__ = "invites"
+
+    token = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    email = Column(String, nullable=False)
+    used = Column(Boolean, default=False)
+    created_at = Column(DateTime, default=datetime.utcnow)

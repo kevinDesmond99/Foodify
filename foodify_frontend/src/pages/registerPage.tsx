@@ -1,49 +1,40 @@
 import { useEffect, useState } from 'react';
 import RegisterForm from '../components/RegisterForm';
-import { createClient } from '@supabase/supabase-js';
 
-const supabase = createClient(
-  process.env.REACT_APP_SUPABASE_URL!,
-  process.env.REACT_APP_SUPABASE_ANON_KEY!
-);
-
-interface Invite {
-  email: string;
-  used: boolean;
+interface InviteResponse {
+  valid: boolean;
+  email?: string;
 }
 
-
 export default function RegisterPage() {
-  const [invite, setInvite] = useState<Invite | null>(null);
-  const [token, setToken] = useState('');
+  const [token, setToken] = useState<string>('');
+  const [invite, setInvite] = useState<{ email: string } | null>(null);
 
   useEffect(() => {
     const t = new URLSearchParams(window.location.search).get('token');
-    if (t !== null) {
-      setToken(t);
-    }
+    console.log(t);
     if (t) {
-      supabase
-        .from('invites')
-        .select('*')
-        .eq('token', t)
-        .single()
-        .then(({ data }) => {
-          if (data && !data.used) {
-            setInvite(data);
+      setToken(t);
+      fetch(`http://localhost:8000/validate-token/${t}`)
+        .then((res) => res.json())
+        .then((data: InviteResponse) => {
+          console.log(data);
+          if (data.valid && data.email) {
+            setInvite({ email: data.email });
           } else {
             alert('Token non valido o già usato');
           }
+        })
+        .catch(() => {
+          alert('Errore nella verifica del token');
         });
     }
   }, []);
 
   const handleSuccess = async () => {
-    await supabase
-      .from('invites')
-      .update({ used: true })
-      .eq('token', token);
-
+    await fetch(`http://localhost:8000/consume-token/${token}`, {
+      method: 'POST',
+    });
     alert('Registrazione completata!');
   };
 

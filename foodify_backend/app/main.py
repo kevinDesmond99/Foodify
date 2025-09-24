@@ -1,22 +1,23 @@
 from fastapi import FastAPI
-from app.routers import auth, items
+from app.routers import auth, items, token_check
 from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI()
 
-# Origini consentite (React in locale)
+# ✅ CORS configurato correttamente
 origins = [
     "http://localhost:3000",
 ]
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,              # consente solo queste origini
+    allow_origins=origins,
     allow_credentials=True,
-    allow_methods=["*"],                # consente tutti i metodi (GET, POST, ecc.)
-    allow_headers=["*"],                # consente tutti gli header (Authorization, Content-Type, ecc.)
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
-app = FastAPI()
+# ✅ Router inclusi dopo il middleware
 app.include_router(auth.router)
 app.include_router(items.router)
+app.include_router(token_check.router)

@@ -1,7 +1,8 @@
 from fastapi import APIRouter, Depends
+from app import get_db
 from app.dependencies import get_current_user
 from app.schemas import TokenData
-from app.db import get_db, crud
+from app.db import crud
 
 
 router = APIRouter(prefix="/items", tags=["items"])
