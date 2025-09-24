@@ -1,52 +1,35 @@
 # app/routers/auth.py
-
 from fastapi import APIRouter, Depends, HTTPException, status
-from fastapi.security import OAuth2PasswordRequestForm
-from sqlalchemy.orm import Session
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from jose import jwt, JWTError
+import os
 
-from app.core.auth import (
-    authenticate_user,
-    create_access_token,
-    get_password_hash
-)
-from app.db.database import get_db
-from app.db import crud
-from app.schemas import UserCreate, UserRead, Token
+router = APIRouter(prefix="/auth", tags=["auth"])
 
-router = APIRouter(
-    prefix="/auth",
-    tags=["auth"]
-)
+# Prendi la secret key di Supabase dalle env
+SUPABASE_JWT_SECRET = os.getenv("SUPABASE_JWT_SECRET")
+ALGORITHM = "HS256"
 
+security = HTTPBearer()
 
-@router.post(
-    "/signup",
-    response_model=UserRead,
-    status_code=status.HTTP_201_CREATED
-)
-def signup(
-    user: UserCreate,
-    db: Session = Depends(get_db)
-):
-    hashed_pw = get_password_hash(user.password)
-    return crud.create_user(db, user, hashed_pw)
-
-
-@router.post(
-    "/token",
-    response_model=Token
-)
-def login(
-    form_data: OAuth2PasswordRequestForm = Depends(),
-    db: Session = Depends(get_db)
-):
-    user = authenticate_user(db, form_data.username, form_data.password)
-    if not user:
+def verify_token(credentials: HTTPAuthorizationCredentials = Depends(security)):
+    token = credentials.credentials
+    try:
+        payload = jwt.decode(token, SUPABASE_JWT_SECRET, algorithms=[ALGORITHM])
+        # "sub" contiene l'UUID dell'utente in Supabase
+        user_id: str = payload.get("sub")
+        if user_id is None:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Token non valido: manca sub"
+            )
+        return {"user_id": user_id, "claims": payload}
+    except JWTError:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Incorrect username or password",
-            headers={"WWW-Authenticate": "Bearer"},
+            detail="Token non valido o scaduto"
         )
-    # creiamo il token con il claim "sub"
-    access_token = create_access_token(data={"sub": str(user.tenant_id)})
-    return {"access_token": access_token, "token_type": "bearer"}
+
+@router.get("/me")
+def get_me(user=Depends(verify_token)):
+    return {"user_id": user["user_id"], "claims": user["claims"]}
