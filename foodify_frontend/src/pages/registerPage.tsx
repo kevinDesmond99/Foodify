@@ -1,3 +1,4 @@
+// src/pages/RegisterPage.tsx
 import { useEffect, useState } from 'react';
 import RegisterForm from '../components/RegisterForm';
 
@@ -9,38 +10,36 @@ interface InviteResponse {
 export default function RegisterPage() {
   const [token, setToken] = useState<string>('');
   const [invite, setInvite] = useState<{ email: string } | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const t = new URLSearchParams(window.location.search).get('token');
-    console.log(t);
-    if (t) {
-      setToken(t);
-      fetch(`http://localhost:8000/validate-token/${t}`)
-        .then((res) => res.json())
-        .then((data: InviteResponse) => {
-          console.log(data);
-          if (data.valid && data.email) {
-            setInvite({ email: data.email });
-          } else {
-            alert('Token non valido o già usato');
-          }
-        })
-        .catch(() => {
-          alert('Errore nella verifica del token');
-        });
+    if (!t) {
+      setError('Token mancante');
+      return;
     }
+    setToken(t);
+
+    fetch(`http://localhost:8000/validate-token/${t}`)
+      .then(async (res) => {
+        if (!res.ok) {
+          const e = await res.json().catch(() => ({}));
+          throw new Error(e.detail || 'Token non valido');
+        }
+        return res.json();
+      })
+      .then((data: InviteResponse) => {
+        if (data.valid && data.email) {
+          setInvite({ email: data.email });
+        } else {
+          setError('Token non valido o già usato');
+        }
+      })
+      .catch((err) => setError(err.message));
   }, []);
 
-  const handleSuccess = async () => {
-    await fetch(`http://localhost:8000/consume-token/${token}`, {
-      method: 'POST',
-    });
-    alert('Registrazione completata!');
-  };
+  if (error) return <p className="text-center text-red-600 mt-10">{error}</p>;
+  if (!invite) return <p className="text-center mt-10">Verifica token...</p>;
 
-  return invite ? (
-    <RegisterForm email={invite.email} onSuccess={handleSuccess} />
-  ) : (
-    <p>Verifica token...</p>
-  );
+  return <RegisterForm email={invite.email} token={token} />;
 }
