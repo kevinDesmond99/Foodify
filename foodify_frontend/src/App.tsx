@@ -11,9 +11,7 @@ export function App() {
       <Routes>
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<RegisterPage />} />
-        <Route path="/dashboard" element={<Dashboard onLogout={function (): void {
-          throw new Error("Function not implemented.");
-        } } />} />
+        <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/" element={<Navigate to="/login" replace />} />
       </Routes>
     </div>
